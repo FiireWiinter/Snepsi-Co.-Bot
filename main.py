@@ -84,7 +84,6 @@ async def stop():
 
 
 client = loop.run_until_complete(run())
-client.max_messages = 10000
 client.remove_command("help")
 
 

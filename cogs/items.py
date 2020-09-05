@@ -126,14 +126,6 @@ class Items(commands.Cog):
 
     # The Following commands are currently just placeholders, but will be replaced with actual code
     @commands.command()
-    async def shop_add(self, ctx):
-        await ctx.send(f"Adding a item to the shop (not really)")
-
-    @commands.command()
-    async def shop_remove(self, ctx, *, item):
-        await ctx.send(f"Removing item {item} from the shop (not really)")
-
-    @commands.command()
     async def buy(self, ctx, *, item):
         await ctx.send(f"Buying item {item} from the shop (not really)")
 

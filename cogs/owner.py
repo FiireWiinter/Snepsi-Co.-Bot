@@ -13,7 +13,7 @@ def is_owner():
     return commands.check(predicate)
 
 
-class Owner(commands.Cog):
+class Owner(commands.Cog, command_attrs=dict(hidden=True)):
 
     def __init__(self, bot):
         self.bot = bot
@@ -43,6 +43,16 @@ class Owner(commands.Cog):
             "".join(f"\n {l}" for l in msg.split("\n"))
         )
         return await locals()["__ex"](ctx)
+
+    @commands.command()
+    @is_owner()
+    async def shop_add(self, ctx):
+        await ctx.send(f"Adding a item to the shop (not really)")
+
+    @commands.command()
+    @is_owner()
+    async def shop_remove(self, ctx, *, item):
+        await ctx.send(f"Removing item {item} from the shop (not really)")
 
 
 async def delmsg(ctx):

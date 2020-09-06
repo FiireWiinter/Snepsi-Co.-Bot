@@ -4,7 +4,7 @@ import json
 
 with open("config.json") as f:
     data = json.load(f)["economy"]
-    money = data["money_per_message"]
+    money_per_message = data["money_per_message"]
     money_emoji = data["currency_emoji"]
 
 
@@ -77,12 +77,12 @@ class Items(commands.Cog):
             if r:  # User is already in the system
                 await db.execute(
                     "UPDATE users SET money=money+$1 WHERE ID=$2",
-                    money, author.id
+                    money_per_message, author.id
                 )
             else:  # User is not in the System
                 await db.execute(
                     "INSERT INTO users (ID, money, bank, items) VALUES ($1, $2, $3, $4)",
-                    author.id, money, 0, "{}"
+                    author.id, money_per_message, 0, "{}"
                 )
 
     # Check your current balance
@@ -95,7 +95,6 @@ class Items(commands.Cog):
             )
             r = await db.fetchrow("SELECT * FROM users WHERE ID=$1", ctx.author.id)
             if r:  # User is already in the System
-                print("in system")
                 cash = r["money"]
                 bank = r["bank"]
                 net = cash + bank
@@ -103,7 +102,6 @@ class Items(commands.Cog):
                 embed.add_field(name="Bank:", value=f"{money_emoji} {bank}")
                 embed.add_field(name="Net Worth:", value=f"{money_emoji} {net}")
             else:  # User is not in the System
-                print("not in system")
                 embed.add_field(name="Cash:", value=f"{money_emoji} 0")
                 embed.add_field(name="Bank:", value=f"{money_emoji} 0")
                 embed.add_field(name="Net Worth:", value=f"{money_emoji} 0")
@@ -111,8 +109,26 @@ class Items(commands.Cog):
 
     # Deposit Money from your Pockets into your Bank
     @commands.command(aliases=["dep"])
-    async def deposit(self, ctx, amount):
-        pass
+    async def deposit(self, ctx, amount: int):
+        async with self.bot.pool.acquire() as db:
+            r = await db.fetchrow("SELECT * FROM users WHERE ID=$1", ctx.author.id)
+            if r:
+                money = r["money"]
+                bank = r["bank"]
+                if amount <= money:
+                    await db.execute(
+                        "UPDATE users SET money=money-$1, bank=bank+$1 WHERE ID=$2",
+                        amount, ctx.author.id
+                    )
+                    await ctx.send(
+                        f"Deposited {amount} to your Account!\n"
+                        f"You now have {money - amount} in your Pockets!\n"
+                        f"You now have {bank + amount} on your Bank Account!"
+                    )
+                else:
+                    await ctx.send("You don't have that much money in your pockets!")
+            else:
+                return await ctx.send("You don't have money to deposit")
 
     # Withdraw Money from your Bank into your Pockets
     @commands.command(aliases=["with"])

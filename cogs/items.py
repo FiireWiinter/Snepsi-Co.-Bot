@@ -3,9 +3,10 @@ from discord.ext import commands, menus
 import json
 
 with open("config.json") as f:
-    data = json.load(f)["economy"]
-    money_per_message = data["money_per_message"]
-    money_emoji = data["currency_emoji"]
+    data = json.load(f)
+    prefix = data["prefix"]
+    money_per_message = data["economy"]["money_per_message"]
+    money_emoji = data["economy"]["currency_emoji"]
 
 
 class ShopMenu(menus.Menu):
@@ -71,6 +72,8 @@ class Items(commands.Cog):
             return
         if isinstance(message.channel, discord.DMChannel):
             return
+        if message.content.startswith(prefix):
+            return
 
         async with self.bot.pool.acquire() as db:
             r = await db.fetchrow("SELECT * FROM users WHERE ID=$1", author.id)
@@ -93,6 +96,7 @@ class Items(commands.Cog):
                 title="Balance",
                 color=discord.Color.blue()
             )
+
             r = await db.fetchrow("SELECT * FROM users WHERE ID=$1", ctx.author.id)
             if r:  # User is already in the System
                 cash = r["money"]
@@ -132,8 +136,26 @@ class Items(commands.Cog):
 
     # Withdraw Money from your Bank into your Pockets
     @commands.command(aliases=["with"])
-    async def withdraw(self, ctx, amount):
-        pass
+    async def withdraw(self, ctx, amount: int):
+        async with self.bot.pool.acquire() as db:
+            r = await db.fetchrow("SELECT * FROM users WHERE ID=$1", ctx.author.id)
+            if r:
+                money = r["money"]
+                bank = r["bank"]
+                if amount <= bank:
+                    await db.execute(
+                        "UPDATE users SET money=money+$1, bank=bank-$1 WHERE ID=$2",
+                        amount, ctx.author.id
+                    )
+                    await ctx.send(
+                        f"Withdrew {amount} from your Account!\n"
+                        f"You now have {money + amount} in your Pockets!\n"
+                        f"You now have {bank - amount} on your Bank Account!"
+                    )
+                else:
+                    await ctx.send("You don't have that much money in your Bank Account!")
+            else:
+                return await ctx.send("You don't have money to withdraw")
 
     # Display the Shop
     @commands.command()
